@@ -181,6 +181,13 @@ def tarea_diaria():
     ))
 
 # Programar a las 23:55
-argentina = timezone('America/Argentina/Buenos_Aires')  scheduler.add_job(     lambda: app.bot.send_message(chat_id=ADMIN_ID, text="¿Se trabaja esta madrugada? Usá /hoy"),     "cron",     day_of_week="sun-thu",     hour=23,     minute=55,     timezone=argentina )
+scheduler.add_job(
+    lambda: app.bot.send_message(chat_id=ADMIN_ID, text="¿Se trabaja esta madrugada? Usá /hoy"),
+    "cron",
+    day_of_week="sun-thu",
+    hour=23,
+    minute=55,
+    timezone=argentina
+)
 
 app.run_polling()
