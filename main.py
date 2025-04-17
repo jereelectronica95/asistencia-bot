@@ -1,6 +1,6 @@
 from telegram import Update, InputFile, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (Application, CommandHandler, ContextTypes, CallbackQueryHandler)
-from telegram.constants import ParseMode
+from telegram.ext import (Application, CommandHandler, ContextTypes,
+                          CallbackQueryHandler)
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime
 import pandas as pd
@@ -9,11 +9,10 @@ import asyncio
 
 TOKEN = "7648235489:AAEmozaPfdWuzzkr5rhpnyiwD9F4Z8fNU9M"
 registro_path = "data/registro.csv"
-
-application = Application.builder().token(TOKEN).concurrent_updates(False).build()
 scheduler = AsyncIOScheduler()
+application = Application.builder().token(TOKEN).concurrent_updates(False).build()
 
-# ======================= FUNCIONES BÁSICAS =======================
+# ============================ FUNCIONES BÁSICAS =============================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -27,10 +26,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/start – Ver este mensaje"
     )
 
-async def hola(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¡Estoy vivo!")
-
-# ======================= VISUALIZACIÓN =======================
+# ============================ VISUALIZACIÓN =============================
 
 async def ver_hoy(update: Update, context: ContextTypes.DEFAULT_TYPE):
     fecha = datetime.now().strftime("%Y-%m-%d")
@@ -47,10 +43,8 @@ async def mostrar_registro(update, fecha):
     if not os.path.exists(registro_path):
         await update.message.reply_text("No hay registros guardados.")
         return
-
     df = pd.read_csv(registro_path)
     df_dia = df[df["fecha"] == fecha]
-
     if df_dia.empty:
         await update.message.reply_text(f"No hay registros para el día {fecha}.")
         return
@@ -71,45 +65,7 @@ async def mostrar_registro(update, fecha):
 
     await update.message.reply_text(texto, parse_mode="Markdown")
 
-# ======================= EXPORTACIÓN =======================
-
-async def exportar(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not os.path.exists(registro_path):
-        await update.message.reply_text("No hay datos de asistencia para exportar.")
-        return
-
-    df = pd.read_csv(registro_path)
-    excel_path = "data/asistencia_export.xlsx"
-
-    with pd.ExcelWriter(excel_path, engine="xlsxwriter") as writer:
-        resumen = df.groupby("fecha")["asistencia"].apply(lambda x: (x == "TRABAJO").sum()).reset_index(name="trabajados")
-        resumen["no_trabajados"] = df.groupby("fecha")["asistencia"].apply(lambda x: (x == "NO").sum()).values
-        resumen.to_excel(writer, sheet_name="Resumen", index=False)
-
-        workbook = writer.book
-        worksheet = writer.sheets["Resumen"]
-        chart = workbook.add_chart({'type': 'column'})
-        chart.add_series({
-            'name': 'Trabajados',
-            'categories': ['Resumen', 1, 0, len(resumen), 0],
-            'values':     ['Resumen', 1, 1, len(resumen), 1],
-        })
-        chart.add_series({
-            'name': 'No trabajados',
-            'categories': ['Resumen', 1, 0, len(resumen), 0],
-            'values':     ['Resumen', 1, 2, len(resumen), 2],
-        })
-        chart.set_title({'name': 'Resumen de Días'})
-        chart.set_x_axis({'name': 'Fecha'})
-        chart.set_y_axis({'name': 'Cantidad'})
-        worksheet.insert_chart('E2', chart)
-
-        for op in df["operario"].dropna().unique():
-            df[df["operario"] == op].to_excel(writer, sheet_name=op[:31], index=False)
-
-    await update.message.reply_document(InputFile(excel_path), filename="asistencia_export.xlsx")
-
-# ======================= AVISO AUTOMÁTICO 00:00 =======================
+# ============================ AVISO 00:00 HS =============================
 
 async def mensaje_diario():
     chat_id = 555786610
@@ -123,7 +79,7 @@ async def callback_trabajo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     if query.data == "trabajar_si":
-        await query.edit_message_text("🗓 Día confirmado como *laborable*.", parse_mode="Markdown")
+        await query.edit_message_text("📅 Día confirmado como *laborable*.", parse_mode="Markdown")
     elif query.data == "trabajar_no":
         fecha = datetime.now().strftime("%Y-%m-%d")
         if not os.path.exists(registro_path):
@@ -134,31 +90,23 @@ async def callback_trabajo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         df.to_csv(registro_path, index=False)
         await query.edit_message_text("📴 Día marcado como *no laborable*.", parse_mode="Markdown")
 
-# ======================= HANDLERS =======================
+# ============================ MAIN =============================
 
-application.add_handler(CommandHandler("start", start))
-application.add_handler(CommandHandler("hola", hola))
-application.add_handler(CommandHandler("ver_hoy", ver_hoy))
-application.add_handler(CommandHandler("ver_fecha", ver_fecha))
-application.add_handler(CommandHandler("exportar", exportar))
-application.add_handler(CallbackQueryHandler(callback_trabajo, pattern="^trabajar_"))
+def main():
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("ver_hoy", ver_hoy))
+    application.add_handler(CommandHandler("ver_fecha", ver_fecha))
+    application.add_handler(CallbackQueryHandler(callback_trabajo, pattern="^trabajar_"))
 
-scheduler.add_job(mensaje_diario, trigger="cron", hour=0, minute=0)
-
-# ======================= ARRANQUE CORRECTO =======================
-
-async def main():
-    print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
+    scheduler.add_job(lambda: asyncio.create_task(mensaje_diario()), "cron", hour=0, minute=0)
     scheduler.start()
+    print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
     print("⏰ Scheduler iniciado correctamente.")
-    await application.initialize()
-    await application.start()
-    await application.updater.start_polling()
-    await application.updater.idle()
+
+    application.run_polling()
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    main()
 
 
 
