@@ -7,7 +7,6 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, time
 import pandas as pd
 import os
-import asyncio
 
 TOKEN = "7648235489:AAEmozaPfdWuzzkr5rhpnyiwD9F4Z8fNU9M"
 registro_path = "data/registro.csv"
@@ -146,16 +145,10 @@ application.add_handler(CommandHandler("exportar", exportar))
 application.add_handler(CallbackQueryHandler(callback_trabajo, pattern="^trabajar_"))
 
 scheduler.add_job(mensaje_diario, trigger="cron", hour=0, minute=0)
-
-async def on_startup(app):
-    scheduler.start()
-    print("⏰ Scheduler iniciado correctamente.")
-
-async def main():
-    await on_startup(application)
-    print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
-    await application.run_polling()
+scheduler.start()
+print("⏰ Scheduler iniciado correctamente.")
+print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    application.run_polling()
 
