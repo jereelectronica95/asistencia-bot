@@ -1,12 +1,16 @@
-# === VISUALIZACIÓN DE HISTORIAL ===
-
 from telegram import Update
-from telegram.ext import ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes
+from datetime import datetime
+import pandas as pd
+import os
+
+TOKEN = "7648235489:AAEmozaPfdWuzzkr5rhpnyiwD9F4Z8fNU9M"
+
+application = Application.builder().token(TOKEN).build()
 
 
 async def ver_hoy(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    fecha = datetime.now(arg).strftime("%Y-%m-%d")
+    fecha = datetime.now().strftime("%Y-%m-%d")
     await mostrar_registro(update, fecha)
 
 async def ver_fecha(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -38,10 +42,11 @@ async def mostrar_registro(update, fecha):
         else:
             texto += f"- {fila['operario']}: {fila['asistencia']}\\n"
 
-    if str(df_dia['comentario'].values[0]).strip():
+    if "comentario" in df_dia.columns and str(df_dia['comentario'].values[0]).strip():
         texto += f"Comentario: {df_dia['comentario'].values[0]}\\n"
 
     await update.message.reply_text(texto, parse_mode="Markdown")
 
-app.add_handler(CommandHandler("ver_hoy", ver_hoy))
-app.add_handler(CommandHandler("ver_fecha", ver_fecha))
+# Agregá los handlers así:
+application.add_handler(CommandHandler("ver_hoy", ver_hoy))
+application.add_handler(CommandHandler("ver_fecha", ver_fecha))
