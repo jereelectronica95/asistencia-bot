@@ -1,23 +1,18 @@
-from telegram import Update, InputFile
-from telegram.ext import (Application, CommandHandler, ContextTypes, MessageHandler, filters,
-                          ConversationHandler, CallbackQueryHandler)
+from telegram import Update, InputFile, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (Application, CommandHandler, ContextTypes, CallbackQueryHandler)
 from telegram.constants import ParseMode
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from datetime import datetime, time
+from datetime import datetime
 import pandas as pd
 import os
 
 TOKEN = "7648235489:AAEmozaPfdWuzzkr5rhpnyiwD9F4Z8fNU9M"
 registro_path = "data/registro.csv"
-scheduler = AsyncIOScheduler()
+
 application = Application.builder().token(TOKEN).concurrent_updates(False).build()
+scheduler = AsyncIOScheduler()
 
-SELECCION_OPERARIOS, CONFIRMAR_TRABAJO, INGRESAR_TIJERAS, INGRESAR_HORAS, COMENTARIO, FOTO = range(6)
-registro_temporal = {}
-operarios = ["Operario1", "Operario2", "Operario3"]  # Lista editable
-
-# ============================ FUNCIONES BÁSICAS =============================
+# ======================= FUNCIONES BÁSICAS =======================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -34,7 +29,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def hola(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("¡Estoy vivo!")
 
-# ============================ VISUALIZACIÓN =============================
+# ======================= VISUALIZACIÓN =======================
 
 async def ver_hoy(update: Update, context: ContextTypes.DEFAULT_TYPE):
     fecha = datetime.now().strftime("%Y-%m-%d")
@@ -51,8 +46,10 @@ async def mostrar_registro(update, fecha):
     if not os.path.exists(registro_path):
         await update.message.reply_text("No hay registros guardados.")
         return
+
     df = pd.read_csv(registro_path)
     df_dia = df[df["fecha"] == fecha]
+
     if df_dia.empty:
         await update.message.reply_text(f"No hay registros para el día {fecha}.")
         return
@@ -73,12 +70,13 @@ async def mostrar_registro(update, fecha):
 
     await update.message.reply_text(texto, parse_mode="Markdown")
 
-# ============================ EXPORTACIÓN =============================
+# ======================= EXPORTACIÓN =======================
 
 async def exportar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not os.path.exists(registro_path):
         await update.message.reply_text("No hay datos de asistencia para exportar.")
         return
+
     df = pd.read_csv(registro_path)
     excel_path = "data/asistencia_export.xlsx"
 
@@ -110,7 +108,7 @@ async def exportar(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_document(InputFile(excel_path), filename="asistencia_export.xlsx")
 
-# ============================ AVISO 00:00 HS =============================
+# ======================= AVISO AUTOMÁTICO 00:00 =======================
 
 async def mensaje_diario():
     chat_id = 555786610
@@ -135,7 +133,7 @@ async def callback_trabajo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         df.to_csv(registro_path, index=False)
         await query.edit_message_text("📴 Día marcado como *no laborable*.", parse_mode="Markdown")
 
-# ============================ INICIALIZACIÓN =============================
+# ======================= HANDLERS =======================
 
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("hola", hola))
@@ -146,9 +144,14 @@ application.add_handler(CallbackQueryHandler(callback_trabajo, pattern="^trabaja
 
 scheduler.add_job(mensaje_diario, trigger="cron", hour=0, minute=0)
 
-if __name__ == "__main__":
-    print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
+# ======================= ARRANQUE CORRECTO =======================
+
+async def post_init(app):
     scheduler.start()
     print("⏰ Scheduler iniciado correctamente.")
-    application.run_polling()
+
+if __name__ == "__main__":
+    print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
+    application.run_polling(post_init=post_init)
+
 
