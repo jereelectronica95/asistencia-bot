@@ -12,7 +12,6 @@ import asyncio
 TOKEN = "7648235489:AAEmozaPfdWuzzkr5rhpnyiwD9F4Z8fNU9M"
 registro_path = "data/registro.csv"
 scheduler = AsyncIOScheduler()
-
 application = Application.builder().token(TOKEN).concurrent_updates(False).build()
 
 # ============================ FUNCIONES BÁSICAS =============================
@@ -71,16 +70,41 @@ async def mostrar_registro(update, fecha):
 
     await update.message.reply_text(texto, parse_mode="Markdown")
 
+# ============================ AVISO 00:00 HS =============================
+
+async def mensaje_diario():
+    chat_id = 555786610  # ID de Jeremías
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("✅ Sí, se trabaja", callback_data="trabajar_si")],
+        [InlineKeyboardButton("❌ No, día no laborable", callback_data="trabajar_no")]
+    ])
+    await application.bot.send_message(chat_id=chat_id, text="¿Se trabaja hoy?", reply_markup=keyboard)
+
+async def callback_trabajo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    if query.data == "trabajar_si":
+        await query.edit_message_text("📅 Día confirmado como *laborable*.", parse_mode="Markdown")
+    elif query.data == "trabajar_no":
+        fecha = datetime.now().strftime("%Y-%m-%d")
+        if not os.path.exists(registro_path):
+            df = pd.DataFrame(columns=["fecha", "operario", "asistencia", "comentario", "foto", "tijeras"])
+        else:
+            df = pd.read_csv(registro_path)
+        df = pd.concat([df, pd.DataFrame([[fecha, "", "NO", "", "", ""]], columns=df.columns)])
+        df.to_csv(registro_path, index=False)
+        await query.edit_message_text("📴 Día marcado como *no laborable*.", parse_mode="Markdown")
+
 # ============================ INICIALIZACIÓN =============================
 
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("hola", hola))
 application.add_handler(CommandHandler("ver_hoy", ver_hoy))
 application.add_handler(CommandHandler("ver_fecha", ver_fecha))
+application.add_handler(CallbackQueryHandler(callback_trabajo, pattern="^trabajar_"))
 
-async def on_startup(app):
-    scheduler.start()
+scheduler.add_job(mensaje_diario, trigger="cron", hour=0, minute=0)
+scheduler.start()
 
 print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
-application.run_polling(on_startup=on_startup)
-
+application.run_polling()
