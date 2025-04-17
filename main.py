@@ -7,7 +7,8 @@ import os
 TOKEN = "7648235489:AAEmozaPfdWuzzkr5rhpnyiwD9F4Z8fNU9M"
 registro_path = "data/registro.csv"  # Asegurate de crear esta carpeta/archivo
 
-application = Application.builder().token(TOKEN).build()
+application = Application.builder().token(TOKEN).concurrent_updates(False).build()
+
 
 async def ver_hoy(update: Update, context: ContextTypes.DEFAULT_TYPE):
     fecha = datetime.now().strftime("%Y-%m-%d")
