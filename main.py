@@ -151,5 +151,11 @@ async def on_startup(app):
     scheduler.start()
     print("⏰ Scheduler iniciado correctamente.")
 
-print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
-application.run_polling(post_init=on_startup)
+async def main():
+    await on_startup(application)
+    print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
+    await application.run_polling()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
