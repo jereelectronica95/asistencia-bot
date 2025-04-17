@@ -46,6 +46,15 @@ async def mostrar_registro(update, fecha):
         texto += f"Comentario: {df_dia['comentario'].values[0]}\n"
 
     await update.message.reply_text(texto, parse_mode="Markdown")
+# /start
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "👋 ¡Hola! Este es el bot de asistencia.\n\n"
+        "Usá los siguientes comandos:\n"
+        "• /ver_hoy – Ver quién asistió hoy\n"
+        "• /ver_fecha YYYY-MM-DD – Ver registro por fecha\n"
+        "• /hola – Test para ver si el bot responde"
+    )
 
 # Handlers
 application.add_handler(CommandHandler("ver_hoy", ver_hoy))
