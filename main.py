@@ -5,6 +5,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime
 import pandas as pd
 import os
+import asyncio
 
 TOKEN = "7648235489:AAEmozaPfdWuzzkr5rhpnyiwD9F4Z8fNU9M"
 registro_path = "data/registro.csv"
@@ -122,7 +123,7 @@ async def callback_trabajo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     if query.data == "trabajar_si":
-        await query.edit_message_text("📅 Día confirmado como *laborable*.", parse_mode="Markdown")
+        await query.edit_message_text("🗓 Día confirmado como *laborable*.", parse_mode="Markdown")
     elif query.data == "trabajar_no":
         fecha = datetime.now().strftime("%Y-%m-%d")
         if not os.path.exists(registro_path):
@@ -146,12 +147,18 @@ scheduler.add_job(mensaje_diario, trigger="cron", hour=0, minute=0)
 
 # ======================= ARRANQUE CORRECTO =======================
 
-async def post_init(app):
+async def main():
+    print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
     scheduler.start()
     print("⏰ Scheduler iniciado correctamente.")
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling()
+    await application.updater.idle()
 
 if __name__ == "__main__":
-    print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
-    application.run_polling(post_init=post_init)
+    import asyncio
+    asyncio.run(main())
+
 
 
