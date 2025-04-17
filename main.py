@@ -31,3 +31,13 @@ if not os.path.exists(comentarios_path):
 
 # Código principal se define aquí...
 print("Bot cargado correctamente")
+# --- COMANDOS ---
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Bot de asistencia listo para usar. Usá /hoy o /agendar para registrar días.")
+
+# --- ASOCIAR HANDLERS ---
+app.add_handler(CommandHandler("start", start))
+
+# --- EJECUTAR BOT ---
+if __name__ == "__main__":
+    app.run_polling()
