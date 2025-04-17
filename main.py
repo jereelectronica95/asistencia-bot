@@ -7,7 +7,6 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, time
 import pandas as pd
 import os
-import asyncio
 
 TOKEN = "7648235489:AAEmozaPfdWuzzkr5rhpnyiwD9F4Z8fNU9M"
 registro_path = "data/registro.csv"
@@ -147,12 +146,9 @@ application.add_handler(CallbackQueryHandler(callback_trabajo, pattern="^trabaja
 
 scheduler.add_job(mensaje_diario, trigger="cron", hour=0, minute=0)
 
-async def main():
+if __name__ == "__main__":
     print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
     scheduler.start()
     print("⏰ Scheduler iniciado correctamente.")
-    await application.run_polling()
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    application.run_polling()
 
