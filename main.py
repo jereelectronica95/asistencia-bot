@@ -146,8 +146,10 @@ application.add_handler(CommandHandler("exportar", exportar))
 application.add_handler(CallbackQueryHandler(callback_trabajo, pattern="^trabajar_"))
 
 scheduler.add_job(mensaje_diario, trigger="cron", hour=0, minute=0)
-scheduler.start()
+
+async def on_startup(app):
+    scheduler.start()
+    print("⏰ Scheduler iniciado correctamente.")
 
 print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
-application.run_polling()
-
+application.run_polling(post_init=on_startup)
