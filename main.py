@@ -5,9 +5,9 @@ import pandas as pd
 import os
 
 TOKEN = "7648235489:AAEmozaPfdWuzzkr5rhpnyiwD9F4Z8fNU9M"
+registro_path = "data/registro.csv"  # Asegurate que este archivo exista o se cree
 
 application = Application.builder().token(TOKEN).build()
-
 
 async def ver_hoy(update: Update, context: ContextTypes.DEFAULT_TYPE):
     fecha = datetime.now().strftime("%Y-%m-%d")
@@ -30,23 +30,25 @@ async def mostrar_registro(update, fecha):
         await update.message.reply_text(f"No hay registros para el día {fecha}.")
         return
 
-    texto = f"**Registro del {fecha}:**\\n"
+    texto = f"**Registro del {fecha}:**\n"
 
     for _, fila in df_dia.iterrows():
         if fila["asistencia"] == "TRABAJO":
-            texto += f"✔ {fila['operario']}: trabajó (tijeras: {fila['tijeras']})\\n"
+            texto += f"✔ {fila['operario']}: trabajó (tijeras: {fila['tijeras']})\n"
         elif fila["asistencia"] == "PRESENTE":
-            texto += f"🟡 {fila['operario']}: solo presente\\n"
+            texto += f"🟡 {fila['operario']}: solo presente\n"
         elif fila["asistencia"] == "FALTO":
-            texto += f"❌ {fila['operario']}: faltó\\n"
+            texto += f"❌ {fila['operario']}: faltó\n"
         else:
-            texto += f"- {fila['operario']}: {fila['asistencia']}\\n"
+            texto += f"- {fila['operario']}: {fila['asistencia']}\n"
 
     if "comentario" in df_dia.columns and str(df_dia['comentario'].values[0]).strip():
-        texto += f"Comentario: {df_dia['comentario'].values[0]}\\n"
+        texto += f"Comentario: {df_dia['comentario'].values[0]}\n"
 
     await update.message.reply_text(texto, parse_mode="Markdown")
 
-# Agregá los handlers así:
 application.add_handler(CommandHandler("ver_hoy", ver_hoy))
 application.add_handler(CommandHandler("ver_fecha", ver_fecha))
+
+# 🚀 Inicia el bot
+application.run_polling()
