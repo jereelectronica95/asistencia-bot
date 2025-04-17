@@ -14,6 +14,10 @@ registro_path = "data/registro.csv"
 scheduler = AsyncIOScheduler()
 application = Application.builder().token(TOKEN).concurrent_updates(False).build()
 
+SELECCION_OPERARIOS, CONFIRMAR_TRABAJO, INGRESAR_TIJERAS, INGRESAR_HORAS, COMENTARIO, FOTO = range(6)
+registro_temporal = {}
+operarios = ["Operario1", "Operario2", "Operario3"]  # Lista editable
+
 # ============================ FUNCIONES BÁSICAS =============================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -70,10 +74,47 @@ async def mostrar_registro(update, fecha):
 
     await update.message.reply_text(texto, parse_mode="Markdown")
 
+# ============================ EXPORTACIÓN =============================
+
+async def exportar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not os.path.exists(registro_path):
+        await update.message.reply_text("No hay datos de asistencia para exportar.")
+        return
+    df = pd.read_csv(registro_path)
+    excel_path = "data/asistencia_export.xlsx"
+
+    with pd.ExcelWriter(excel_path, engine="xlsxwriter") as writer:
+        resumen = df.groupby("fecha")["asistencia"].apply(lambda x: (x == "TRABAJO").sum()).reset_index(name="trabajados")
+        resumen["no_trabajados"] = df.groupby("fecha")["asistencia"].apply(lambda x: (x == "NO").sum()).values
+        resumen.to_excel(writer, sheet_name="Resumen", index=False)
+
+        workbook = writer.book
+        worksheet = writer.sheets["Resumen"]
+        chart = workbook.add_chart({'type': 'column'})
+        chart.add_series({
+            'name': 'Trabajados',
+            'categories': ['Resumen', 1, 0, len(resumen), 0],
+            'values':     ['Resumen', 1, 1, len(resumen), 1],
+        })
+        chart.add_series({
+            'name': 'No trabajados',
+            'categories': ['Resumen', 1, 0, len(resumen), 0],
+            'values':     ['Resumen', 1, 2, len(resumen), 2],
+        })
+        chart.set_title({'name': 'Resumen de Días'})
+        chart.set_x_axis({'name': 'Fecha'})
+        chart.set_y_axis({'name': 'Cantidad'})
+        worksheet.insert_chart('E2', chart)
+
+        for op in df["operario"].dropna().unique():
+            df[df["operario"] == op].to_excel(writer, sheet_name=op[:31], index=False)
+
+    await update.message.reply_document(InputFile(excel_path), filename="asistencia_export.xlsx")
+
 # ============================ AVISO 00:00 HS =============================
 
 async def mensaje_diario():
-    chat_id = 555786610  # ID de Jeremías
+    chat_id = 555786610
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("✅ Sí, se trabaja", callback_data="trabajar_si")],
         [InlineKeyboardButton("❌ No, día no laborable", callback_data="trabajar_no")]
@@ -101,6 +142,7 @@ application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("hola", hola))
 application.add_handler(CommandHandler("ver_hoy", ver_hoy))
 application.add_handler(CommandHandler("ver_fecha", ver_fecha))
+application.add_handler(CommandHandler("exportar", exportar))
 application.add_handler(CallbackQueryHandler(callback_trabajo, pattern="^trabajar_"))
 
 scheduler.add_job(mensaje_diario, trigger="cron", hour=0, minute=0)
@@ -108,3 +150,4 @@ scheduler.start()
 
 print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
 application.run_polling()
+
