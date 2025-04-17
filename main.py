@@ -1,9 +1,11 @@
 # === VISUALIZACIÓN DE HISTORIAL ===
 
-from telegram.ext import MessageHandler
-from datetime import datetime
+from telegram import Update
+from telegram.ext import ContextTypes
+
 
 async def ver_hoy(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
     fecha = datetime.now(arg).strftime("%Y-%m-%d")
     await mostrar_registro(update, fecha)
 
