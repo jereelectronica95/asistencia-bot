@@ -50,6 +50,7 @@ async def mostrar_registro(update, fecha):
 # Handlers
 application.add_handler(CommandHandler("ver_hoy", ver_hoy))
 application.add_handler(CommandHandler("ver_fecha", ver_fecha))
+print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
 
 # 🚀 ¡Arranca el bot!
 application.run_polling()
