@@ -9,11 +9,12 @@ registro_path = "data/registro.csv"  # Asegurate de crear esta carpeta/archivo
 
 application = Application.builder().token(TOKEN).concurrent_updates(False).build()
 
-
+# /ver_hoy
 async def ver_hoy(update: Update, context: ContextTypes.DEFAULT_TYPE):
     fecha = datetime.now().strftime("%Y-%m-%d")
     await mostrar_registro(update, fecha)
 
+# /ver_fecha
 async def ver_fecha(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) != 1:
         await update.message.reply_text("Usá el comando así: /ver_fecha YYYY-MM-DD")
@@ -21,6 +22,7 @@ async def ver_fecha(update: Update, context: ContextTypes.DEFAULT_TYPE):
     fecha = context.args[0]
     await mostrar_registro(update, fecha)
 
+# mostrar_registro
 async def mostrar_registro(update, fecha):
     if not os.path.exists(registro_path):
         await update.message.reply_text("No hay registros guardados.")
@@ -47,6 +49,7 @@ async def mostrar_registro(update, fecha):
         texto += f"Comentario: {df_dia['comentario'].values[0]}\n"
 
     await update.message.reply_text(texto, parse_mode="Markdown")
+
 # /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -57,10 +60,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• /hola – Test para ver si el bot responde"
     )
 
+# /hola
+async def hola(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("¡Estoy vivo!")
+
 # Handlers
+application.add_handler(CommandHandler("start", start))
+application.add_handler(CommandHandler("hola", hola))
 application.add_handler(CommandHandler("ver_hoy", ver_hoy))
 application.add_handler(CommandHandler("ver_fecha", ver_fecha))
+
 print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
 
 # 🚀 ¡Arranca el bot!
 application.run_polling()
+
