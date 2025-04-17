@@ -10,7 +10,7 @@ from telegram.ext import (
 import pandas as pd
 from apscheduler.schedulers.background import BackgroundScheduler
 
-TOKEN = "7648235489:AAEmozaPfdwuzzkr5rhpnyiwD9F4Z8fNU9M"
+TOKEN = "7648235489:AAEmozaPfdWuzzkr5rhpnyiwD9F4Z8fNU9M"
 ADMIN_ID = 555786610
 registro_path = "data/registro.csv"
 comentarios_path = "data/comentarios.csv"
