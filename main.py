@@ -1,6 +1,10 @@
-from telegram import Update, InputFile, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (Application, CommandHandler, ContextTypes,
-                          CallbackQueryHandler)
+
+
+from telegram import Update, InputFile
+from telegram.ext import (Application, CommandHandler, ContextTypes, MessageHandler, filters,
+                          ConversationHandler, CallbackQueryHandler)
+from telegram.constants import ParseMode
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime
 import pandas as pd
@@ -11,6 +15,10 @@ TOKEN = "7648235489:AAEmozaPfdWuzzkr5rhpnyiwD9F4Z8fNU9M"
 registro_path = "data/registro.csv"
 scheduler = AsyncIOScheduler()
 application = Application.builder().token(TOKEN).concurrent_updates(False).build()
+
+SELECCION_OPERARIOS, CONFIRMAR_TRABAJO, INGRESAR_TIJERAS, INGRESAR_HORAS, COMENTARIO, FOTO = range(6)
+registro_temporal = {}
+operarios = ["Operario1", "Operario2", "Operario3"]  # Lista editable
 
 # ============================ FUNCIONES BÁSICAS =============================
 
@@ -25,6 +33,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/exportar – Exportar Excel\n"
         "/start – Ver este mensaje"
     )
+
+async def hola(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("¡Estoy vivo!")
 
 # ============================ VISUALIZACIÓN =============================
 
@@ -65,6 +76,43 @@ async def mostrar_registro(update, fecha):
 
     await update.message.reply_text(texto, parse_mode="Markdown")
 
+# ============================ EXPORTACIÓN =============================
+
+async def exportar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not os.path.exists(registro_path):
+        await update.message.reply_text("No hay datos de asistencia para exportar.")
+        return
+    df = pd.read_csv(registro_path)
+    excel_path = "data/asistencia_export.xlsx"
+
+    with pd.ExcelWriter(excel_path, engine="xlsxwriter") as writer:
+        resumen = df.groupby("fecha")["asistencia"].apply(lambda x: (x == "TRABAJO").sum()).reset_index(name="trabajados")
+        resumen["no_trabajados"] = df.groupby("fecha")["asistencia"].apply(lambda x: (x == "NO").sum()).values
+        resumen.to_excel(writer, sheet_name="Resumen", index=False)
+
+        workbook = writer.book
+        worksheet = writer.sheets["Resumen"]
+        chart = workbook.add_chart({'type': 'column'})
+        chart.add_series({
+            'name': 'Trabajados',
+            'categories': ['Resumen', 1, 0, len(resumen), 0],
+            'values':     ['Resumen', 1, 1, len(resumen), 1],
+        })
+        chart.add_series({
+            'name': 'No trabajados',
+            'categories': ['Resumen', 1, 0, len(resumen), 0],
+            'values':     ['Resumen', 1, 2, len(resumen), 2],
+        })
+        chart.set_title({'name': 'Resumen de Días'})
+        chart.set_x_axis({'name': 'Fecha'})
+        chart.set_y_axis({'name': 'Cantidad'})
+        worksheet.insert_chart('E2', chart)
+
+        for op in df["operario"].dropna().unique():
+            df[df["operario"] == op].to_excel(writer, sheet_name=op[:31], index=False)
+
+    await update.message.reply_document(InputFile(excel_path), filename="asistencia_export.xlsx")
+
 # ============================ AVISO 00:00 HS =============================
 
 async def mensaje_diario():
@@ -90,21 +138,25 @@ async def callback_trabajo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         df.to_csv(registro_path, index=False)
         await query.edit_message_text("📴 Día marcado como *no laborable*.", parse_mode="Markdown")
 
-# ============================ MAIN =============================
+# ============================ INICIALIZACIÓN =============================
 
-def main():
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("ver_hoy", ver_hoy))
-    application.add_handler(CommandHandler("ver_fecha", ver_fecha))
-    application.add_handler(CallbackQueryHandler(callback_trabajo, pattern="^trabajar_"))
+application.add_handler(CommandHandler("start", start))
+application.add_handler(CommandHandler("hola", hola))
+application.add_handler(CommandHandler("ver_hoy", ver_hoy))
+application.add_handler(CommandHandler("ver_fecha", ver_fecha))
+application.add_handler(CommandHandler("exportar", exportar))
+application.add_handler(CallbackQueryHandler(callback_trabajo, pattern="^trabajar_"))
 
-    scheduler.add_job(lambda: asyncio.create_task(mensaje_diario()), "cron", hour=0, minute=0)
-    scheduler.start()
+scheduler.add_job(mensaje_diario, trigger="cron", hour=0, minute=0)
+
+async def main():
     print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
     print("⏰ Scheduler iniciado correctamente.")
-
-    application.run_polling()
+    await application.initialize()
+    scheduler.start()
+    await application.start()
+    await application.updater.start_polling()
+    await application.updater.idle()
 
 if __name__ == "__main__":
-    main()
-
+    asyncio.run(main())
