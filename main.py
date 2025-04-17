@@ -5,7 +5,7 @@ import pandas as pd
 import os
 
 TOKEN = "7648235489:AAEmozaPfdWuzzkr5rhpnyiwD9F4Z8fNU9M"
-registro_path = "data/registro.csv"  # Asegurate que este archivo exista o se cree
+registro_path = "data/registro.csv"  # Asegurate de crear esta carpeta/archivo
 
 application = Application.builder().token(TOKEN).build()
 
@@ -47,8 +47,9 @@ async def mostrar_registro(update, fecha):
 
     await update.message.reply_text(texto, parse_mode="Markdown")
 
+# Handlers
 application.add_handler(CommandHandler("ver_hoy", ver_hoy))
 application.add_handler(CommandHandler("ver_fecha", ver_fecha))
 
-# 🚀 Inicia el bot
+# 🚀 ¡Arranca el bot!
 application.run_polling()
