@@ -101,7 +101,8 @@ async def mostrar_registro(update, fecha):
         await update.message.reply_text(f"No hay registros para el día {fecha}.")
         return
 
-    texto = f"**Registro del {fecha}:**
+    texto = f"**Registro del {fecha}:**"
+
 "
     for _, fila in df_dia.iterrows():
         texto += f"- {fila['operario']}: {fila['asistencia']}"
