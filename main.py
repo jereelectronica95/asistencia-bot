@@ -103,7 +103,7 @@ async def mostrar_registro(update, fecha):
 
     texto = f"**Registro del {fecha}:**"
 
-"
+
     for _, fila in df_dia.iterrows():
         texto += f"- {fila['operario']}: {fila['asistencia']}"
         if fila['tijeras'] != "PRESENTE":
