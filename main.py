@@ -147,9 +147,12 @@ application.add_handler(CallbackQueryHandler(callback_trabajo, pattern="^trabaja
 
 scheduler.add_job(mensaje_diario, trigger="cron", hour=0, minute=0)
 
-print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
-
-if __name__ == "__main__":
+async def main():
+    print("✅ BOT INICIADO Y ESCUCHANDO COMANDOS...")
     scheduler.start()
     print("⏰ Scheduler iniciado correctamente.")
-    application.run_polling()
+    await application.run_polling()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
